@@ -2,7 +2,7 @@ from app import db
 
 class Node(db.Model):
     __tablename__ = 'node'
-    idNode = db.Column(db.Integer, primary_key=True)
+    idNode = db.Column(db.Integer, primary_key=True, autoincrement=True)
     idAccount = db.Column(db.Integer, db.ForeignKey('account.idAccount'), nullable=False)
     name = db.Column(db.String(64), nullable=False)
     photo = db.Column(db.String(256))

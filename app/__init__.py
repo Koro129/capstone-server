@@ -10,3 +10,7 @@ migrate = Migrate(app, db)
 
 from app.model import user, account, node, noderelation
 from app import routes
+
+from flask_jwt_extended import JWTManager
+
+jwt = JWTManager(app)
