@@ -1,18 +1,37 @@
 from app import app
-from app.controller import NodeController, AccountController
-from flask import request
+from app.controller import NodeController, AccountController, NodeRelationController
+from flask import request, jsonify
+from flask_jwt_extended import get_jwt_identity, jwt_required
 
 @app.route('/')
 def index():
     return "Hello, World!"
 
-@app.route('/node', methods=['GET'])
+@app.route('/node', methods=['GET', 'POST'])
+@jwt_required()
 def node():
-    return NodeController.index()
+    if request.method == 'GET':
+        return NodeController.index()
+    elif request.method == 'POST':
+        return NodeController.addNode()
 
-@app.route('/account/register', methods=['POST'])
-def addAccount():
-    return AccountController.addAccount()
+@app.route('/node/<id>', methods=['GET', 'PUT', 'DELETE'])
+def nodeDetail(id):
+    if request.method == 'GET':
+        return NodeController.detail(id)
+    elif request.method == 'PUT':
+        return NodeController.updateNode(id)
+    else:
+        return NodeController.deleteNode(id)
+
+@app.route('/edge', methods=['GET'])
+@jwt_required()
+def edge():
+    return NodeRelationController.index()
+
+# @app.route('/account/register', methods=['POST'])
+# def addAccount():
+#     return AccountController.addAccount()
 
 @app.route('/account/login', methods=['POST'])
 def login():

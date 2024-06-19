@@ -6,6 +6,16 @@ from flask_jwt_extended import *
 
 from datetime import datetime, timedelta
 
+def getAccountId():
+    current_user = get_jwt_identity()
+    idAccount = current_user.get('idAccount')
+
+    account = Account.query.filter_by(idAccount=idAccount).first()
+
+    if not account:
+        return response.badRequest([], 'Account not found')
+
+    return idAccount
 
 def index():
     try:
@@ -23,8 +33,8 @@ def formatarray(datas):
 
 def singleAccount(data):
     data = {
+        'idAccount': data.idAccount,
         'username': data.username,
-        'password': data.password,
     }
     return data
 
@@ -33,17 +43,13 @@ def addAccount():
         username = request.form.get('username')
         password = request.form.get('password')
 
-        accounts = Account(username=username)
-        accounts.setPassword(password)
-        db.session.add(accounts)
+        account = Account(username=username)
+        account.setPassword(password)
+        db.session.add(account)
         db.session.commit()
 
-        # data = singleAccount(accounts)
-        return response.success({
-            "username": username,
-            "password": password,
-        
-        }, 'success')
+        data = singleAccount(account)
+        return response.success(data, 'success')
 
     except Exception as e:
         print(e)
@@ -53,20 +59,12 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
 
-        accounts = Account.query.filter_by(username=username).first()
+        account = Account.query.filter_by(username=username).first()
 
-        if not accounts:
+        if not account or not account.checkPassword(password):
             return response.badRequest([], 'Account not found')
-        
-        data = singleAccount(accounts)
-        
-        if not accounts.checkPassword(password):
-            return response.badRequest({
-                'data': data,
-                'username': username,
-                'password': password
-            
-            }, 'Password not match')
+
+        data = singleAccount(account)
 
         expires = timedelta(days=7)
         expires_refresh = timedelta(days=7)
