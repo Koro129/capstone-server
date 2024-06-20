@@ -54,3 +54,23 @@ def addEdge():
 
     except Exception as e:
         print(e)
+
+def deleteEdge():
+    try:
+        idAccount = getAccountId()
+        idNode1 = request.form.get('idNode1')
+        idNode2 = request.form.get('idNode2')
+
+        # Pastikan edge yang akan dihapus ada di database
+        edge = NodeRelation.query.filter_by(idNode1=idNode1, idNode2=idNode2).first()
+        if not edge:
+            return response.badRequest([], 'Edge not found')
+
+        db.session.delete(edge)
+        db.session.commit()
+
+        data = singleEdge(edge)
+        return response.success(data, 'success delete edge')
+
+    except Exception as e:
+        print(e)

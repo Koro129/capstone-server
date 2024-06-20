@@ -13,3 +13,6 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{USERNAME}:{PASSWORD}@{HOST}/{DATABASE}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_RECORD_QUERIES = True
+
+    UPLOAD_FOLDER = str(os.environ.get("UPLOAD_FOLDER"))
+    # MAX_CONTENT_LENGHT = 2 * 1024 * 1024

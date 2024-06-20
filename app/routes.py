@@ -1,5 +1,5 @@
 from app import app
-from app.controller import NodeController, AccountController, NodeRelationController
+from app.controller import NodeController, AccountController, NodeRelationController, Dijkstra
 from flask import request, jsonify
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
@@ -36,3 +36,11 @@ def edge():
 @app.route('/account/login', methods=['POST'])
 def login():
     return AccountController.login()
+
+@app.route('/user/path', methods=['POST'])
+def path():
+    return Dijkstra.shortest_path()
+
+@app.route('/user/node/<id>', methods=['GET'])
+def userNode(id):
+    return NodeController.indexForUser(id)
