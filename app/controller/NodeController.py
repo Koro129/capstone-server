@@ -2,6 +2,8 @@ import os
 from datetime import datetime
 
 from app.model.node import Node
+from app.model.noderelation import NodeRelation
+
 # from app.controller.UploadConfig import allowed_file
 from app.controller.AccountController import getAccountId
 from googleapiclient.discovery import build
@@ -12,8 +14,14 @@ from flask import request
 
 def index():
     try:
+        # data = request.json
         idAccount = getAccountId()
-        node = Node.query.filter_by(idAccount=idAccount).all()
+        # level = data.get('level')
+        level = request.args.get('level')
+        if level:
+            node = Node.query.filter_by(idAccount=idAccount, level=level).all()
+        else:
+            node = Node.query.filter_by(idAccount=idAccount).all()
         data = formatarray(node)
         return response.success(data, 'success')
     except Exception as e:
@@ -22,9 +30,19 @@ def index():
 def indexForUser(id):
     try:
         idAccount = id
-        print(idAccount)
         node = Node.query.filter_by(idAccount=idAccount).all()
         data = formatarray(node)
+        return response.success(data, 'success')
+    except Exception as e:
+        print(e)
+
+def detailForUser(id, idNode):
+    try:
+        idAccount = id
+        node = Node.query.filter_by(idNode=idNode, idAccount=idAccount).first()
+        if not node:
+            return response.badRequest([], 'Node not found')
+        data = singleNode(node)
         return response.success(data, 'success')
     except Exception as e:
         print(e)
@@ -37,12 +55,12 @@ def formatarray(datas):
 
 def singleNode(data):
     data = {
-        'idNode': data.idNode,
+        'id': data.idNode,
         'name': data.name,
         'photo': data.photo,
-        'desc': data.desc,
+        'description': data.desc,
         'address': data.address,
-        'nodetype': data.nodetype,
+        'type': data.nodetype,
         'level': data.level,
     }
     return data
@@ -60,15 +78,17 @@ def detail(id):
 
 def addNode():
     try:
+        data = request.json
         idAccount = getAccountId()
-        name = request.form.get('name')
-        desc = request.form.get('desc')
-        address = request.form.get('address')
-        nodetype = request.form.get('type')
-        level = request.form.get('level')
+        name = data.get('name')
+        desc = data.get('description')
+        address = data.get('address')
+        nodetype = data.get('type')
+        level = data.get('level')
+        photo = data.get('photo')
 
-        photo = request.files['photo']
-        photo = uploadPhoto(photo, idAccount, name)
+        # photo = request.files['photo']
+        # photo = uploadPhoto(photo, idAccount, name)
 
         node = Node(idAccount=idAccount, name=name, photo=photo, desc=desc, address=address, nodetype=nodetype, level=level)
         db.session.add(node)
@@ -82,12 +102,14 @@ def addNode():
 
 def updateNode(id):
     try:
+        data = request.json
         idAccount = getAccountId()
-        name = request.form.get('name')
-        photo = request.form.get('photo')
-        desc = request.form.get('desc')
-        address = request.form.get('address')
-        level = request.form.get('level')
+        name = data.get('name')
+        desc = data.get('description')
+        address = data.get('address')
+        nodetype = data.get('type')
+        level = data.get('level')
+        photo = data.get('photo')
 
         input = [
             {
@@ -95,6 +117,7 @@ def updateNode(id):
                 'photo': photo,
                 'desc': desc,
                 'address': address,
+                'type': nodetype,
                 'level': level
             }
         ]
@@ -104,6 +127,7 @@ def updateNode(id):
         node.name = name
         node.photo = photo
         node.desc = desc
+        node.nodetype = nodetype
         node.address = address
         node.level = level
 
@@ -114,16 +138,23 @@ def updateNode(id):
     except Exception as e:
         print(e)
 
-def hapusNode(id):
+def deleteNode(id):
     try:
+        idAccount = getAccountId()
         node = Node.query.filter_by(idNode=id, idAccount=idAccount).first()
         if not node:
             return response.badRequest([], 'node not found')
-        
-        db.session.delete(node)
-        db.session.commit
 
-        return response.success(input, 'success delete data')
+        # Check if the node is used as a foreign key in NodeRelation
+        nodeRelations = NodeRelation.query.filter_by(idNode1=id).all()
+        nodeRelations += NodeRelation.query.filter_by(idNode2=id).all()
+        if nodeRelations:
+            return response.badRequest([], 'Node used on relation')
+
+        db.session.delete(node)
+        db.session.commit()
+
+        return response.success('', 'success delete data')
     
     except Exception as e:
         print(e)

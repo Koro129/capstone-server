@@ -74,23 +74,60 @@ def singlePath(data):
 
 def shortest_path():
     try:
-        idAccount = 9 #getAccountId()
-        from_node = int(request.form.get('from'))
-        to_node = int(request.form.get('dest'))
+        idAccount = 9  # getAccountId()
+        data = request.json
+        from_node = data.get('from')
+        to_node = data.get('dest')
+
+        # Check if the nodes exist
+        if not Node.query.filter_by(idNode=from_node, idAccount=idAccount).first():
+            return jsonify({'message': 'From node not found'}), 404
+        if not Node.query.filter_by(idNode=to_node, idAccount=idAccount).first():
+            return jsonify({'message': 'To node not found'}), 404
+
+        from_node_level = Node.query.filter_by(idNode=from_node, idAccount=idAccount).first().level
+        to_node_level = Node.query.filter_by(idNode=to_node, idAccount=idAccount).first().level
 
         graph = Graph(idAccount)
-        path, distance = graph.dijkstra(from_node, to_node)
 
-        if path is None:
-            return jsonify({'message': 'No path found'}), 404
+        if from_node_level != to_node_level:
+            # Get the nearest lift on the same level as from_node
+            nearest_lift_from = Node.query.filter_by(level=from_node_level, idAccount=idAccount, nodetype='lift').first()
+            if not nearest_lift_from:
+                return jsonify({'message': 'No lift found on the level of from_node'}), 404
 
-        path_names = [graph.node_map[node] for node in path]
+            # Get the nearest lift on the same level as to_node
+            nearest_lift_to = Node.query.filter_by(level=to_node_level, idAccount=idAccount, nodetype='lift').first()
+            if not nearest_lift_to:
+                return jsonify({'message': 'No lift found on the level of to_node'}), 404
+
+            # Calculate the path from from_node to nearest_lift_from
+            path_to_lift, distance_to_lift = graph.dijkstra(from_node, nearest_lift_from.idNode)
+            if path_to_lift is None:
+                return jsonify({'message': 'No path found to the lift from from_node'}), 404
+
+            # Calculate the path from nearest_lift_to to to_node
+            path_from_lift, distance_from_lift = graph.dijkstra(nearest_lift_to.idNode, to_node)
+            if path_from_lift is None:
+                return jsonify({'message': 'No path found from the lift to to_node'}), 404
+
+            # Combine the paths and distances
+            total_path = path_to_lift + path_from_lift[1:]  # Avoid duplicating the lift node
+            total_distance = distance_to_lift + distance_from_lift
+        else:
+            # Calculate the direct path if both nodes are on the same level
+            total_path, total_distance = graph.dijkstra(from_node, to_node)
+            if total_path is None:
+                return jsonify({'message': 'No path found'}), 404
+
+        path_names = [graph.node_map[node] for node in total_path]
         data = singlePath({
-            'path': path,
-            'distance': distance
+            'path': total_path,
+            'path_names': path_names,
+            'distance': total_distance
         })
         return response.success(data, 'success')
 
     except Exception as e:
         print(e)
-        # return jsonify({'message': 'An error occurred', 'error': str(e)}), 500
+        return jsonify({'message': 'An error occurred', 'error': str(e)}), 500

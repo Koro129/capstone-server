@@ -56,8 +56,10 @@ def addAccount():
 
 def login():
     try:
-        username = request.form.get('username')
-        password = request.form.get('password')
+        data = request.json  # Get JSON data from request body
+        username = data.get('username')
+        password = data.get('password')
+        print(f'username: {username}, password: {password}')
 
         account = Account.query.filter_by(username=username).first()
 

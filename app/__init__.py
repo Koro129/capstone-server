@@ -1,4 +1,5 @@
 from flask import Flask
+
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -14,3 +15,6 @@ jwt = JWTManager(app)
 from app.model import user, account, node, noderelation
 from app import routes
 
+if __name__ == '__main__':
+    # Menjalankan aplikasi Flask untuk diakses dari luar
+    app.run(host='0.0.0.0')
